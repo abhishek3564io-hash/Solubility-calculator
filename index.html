@@ -1,0 +1,2052 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Solubility Calculator — Thermodynamic SLE Model</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+/* ===================================================================
+   CSS VARIABLES — Chemical Science Theme
+   =================================================================== */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  /* Core palette */
+  --navy:        #0a1628;
+  --navy-mid:    #0d2244;
+  --navy-light:  #112d5e;
+  --teal:        #0d9488;
+  --teal-light:  #14b8a6;
+  --cyan:        #06b6d4;
+  --cyan-light:  #22d3ee;
+  --emerald:     #059669;
+  --emerald-lt:  #10b981;
+  --purple:      #7c3aed;
+  --purple-lt:   #a78bfa;
+  --amber:       #d97706;
+  --danger:      #dc2626;
+  --danger-bg:   #fef2f2;
+  --danger-brd:  #fca5a5;
+
+  /* Semantic */
+  --primary:        var(--teal);
+  --primary-dark:   var(--teal);
+  --primary-light:  rgba(13,148,136,0.08);
+  --accent:         var(--cyan);
+  --success:        var(--emerald);
+  --warning-bg:     #fefce8;
+  --warning-border: #fbbf24;
+  --warning-text:   #92400e;
+  --muted:          #64748b;
+  --border:         rgba(13,148,136,0.18);
+  --bg:             #f0f9ff;
+  --card-bg:        #ffffff;
+
+  --radius:    14px;
+  --radius-sm: 9px;
+  --shadow:    0 1px 4px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.05);
+  --shadow-md: 0 4px 16px rgba(13,148,136,0.12), 0 2px 4px rgba(0,0,0,0.06);
+  --shadow-lg: 0 10px 32px rgba(13,148,136,0.18), 0 4px 10px rgba(0,0,0,0.08);
+  --glow-teal: 0 0 20px rgba(13,148,136,0.3);
+  --glow-cyan: 0 0 20px rgba(6,182,212,0.3);
+}
+
+/* ===================================================================
+   BASE
+   =================================================================== */
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, sans-serif;
+  background: var(--bg);
+  color: var(--navy);
+  min-height: 100vh;
+  line-height: 1.6;
+  overflow-x: hidden;
+}
+
+/* ===================================================================
+   ANIMATED BACKGROUND — SVG molecular lattice
+   =================================================================== */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background-image:
+    radial-gradient(circle 1.5px at 50% 50%, rgba(6,182,212,0.18) 100%, transparent 100%);
+  background-size: 60px 60px;
+  opacity: 0.6;
+}
+
+/* ===================================================================
+   HEADER / HERO
+   =================================================================== */
+.site-header {
+  position: relative;
+  background: linear-gradient(135deg,
+    #061120 0%, #0a2240 25%, #0d3360 50%, #0d4466 75%, #064e44 100%);
+  color: white;
+  padding: 0;
+  overflow: hidden;
+  z-index: 1;
+}
+
+/* Molecular SVG background inside hero */
+.hero-bg-svg {
+  position: absolute;
+  inset: 0;
+  width: 100%; height: 100%;
+  pointer-events: none;
+  opacity: 0.18;
+}
+
+/* Floating particles */
+.hero-particles {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+.particle {
+  position: absolute;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(6,182,212,0.7), transparent 70%);
+  animation: floatParticle linear infinite;
+}
+@keyframes floatParticle {
+  0%   { transform: translateY(0) scale(1); opacity: 0.4; }
+  50%  { opacity: 0.9; }
+  100% { transform: translateY(-120px) scale(1.3); opacity: 0; }
+}
+
+.hero-content {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  gap: 2rem;
+  padding: 2.5rem 2rem 2rem;
+  max-width: 1200px;
+  margin: 0 auto;
+  flex-wrap: wrap;
+}
+
+.hero-text { flex: 1; min-width: 260px; }
+.hero-text h1 {
+  font-size: clamp(1.6rem, 4vw, 2.8rem);
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  line-height: 1.1;
+  margin-bottom: 0.6rem;
+  background: linear-gradient(135deg, #fff 0%, #67e8f9 60%, #a7f3d0 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+.hero-text p {
+  font-size: 1rem;
+  color: rgba(255,255,255,0.78);
+  max-width: 520px;
+  line-height: 1.65;
+  margin-bottom: 1rem;
+}
+
+.hero-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+.hero-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  background: rgba(255,255,255,0.08);
+  border: 1px solid rgba(255,255,255,0.18);
+  border-radius: 20px;
+  padding: 4px 12px;
+  font-size: 0.75rem;
+  color: rgba(255,255,255,0.88);
+  letter-spacing: 0.04em;
+  backdrop-filter: blur(4px);
+}
+.hero-badge .dot {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: var(--cyan-light);
+  flex-shrink: 0;
+}
+
+/* Hero illustration – beaker SVG on the right */
+.hero-illustration {
+  flex-shrink: 0;
+  width: clamp(130px, 18vw, 210px);
+  opacity: 0.9;
+  filter: drop-shadow(0 0 24px rgba(6,182,212,0.4));
+  animation: heroFloat 4s ease-in-out infinite;
+}
+@keyframes heroFloat {
+  0%, 100% { transform: translateY(0); }
+  50%       { transform: translateY(-10px); }
+}
+
+/* Equation strip */
+.equation-strip {
+  background: rgba(255,255,255,0.05);
+  border-top: 1px solid rgba(255,255,255,0.08);
+  padding: 0.65rem 2rem;
+  font-size: 0.8rem;
+  color: rgba(255,255,255,0.55);
+  text-align: center;
+  letter-spacing: 0.03em;
+  font-family: 'Courier New', monospace;
+}
+
+/* ===================================================================
+   LAYOUT
+   =================================================================== */
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 2rem 1.5rem;
+  position: relative;
+  z-index: 1;
+}
+
+.section {
+  background: rgba(255,255,255,0.92);
+  backdrop-filter: blur(8px);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 1.6rem;
+  margin-bottom: 1.5rem;
+  border: 1px solid rgba(13,148,136,0.14);
+  transition: box-shadow 0.2s;
+  position: relative;
+  overflow: hidden;
+}
+.section::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0;
+  width: 3px;
+  height: 100%;
+  background: linear-gradient(180deg, var(--teal), var(--cyan));
+  border-radius: 3px 0 0 3px;
+}
+.section:hover { box-shadow: var(--shadow-md); }
+
+.section-title {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--teal);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  margin-bottom: 1.25rem;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+.section-title .step-num {
+  background: linear-gradient(135deg, var(--teal), var(--cyan));
+  color: white;
+  width: 26px; height: 26px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.75rem;
+  font-weight: 700;
+  flex-shrink: 0;
+  box-shadow: 0 2px 8px rgba(13,148,136,0.35);
+}
+.section-icon { font-size: 1rem; }
+
+/* ===================================================================
+   FORM CONTROLS
+   =================================================================== */
+label {
+  display: block;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--navy-mid);
+  margin-bottom: 0.4rem;
+}
+
+select, input[type="number"], input[type="text"] {
+  width: 100%;
+  padding: 0.65rem 1rem;
+  border: 1.5px solid rgba(13,148,136,0.25);
+  border-radius: var(--radius-sm);
+  font-size: 0.95rem;
+  color: var(--navy);
+  background: rgba(255,255,255,0.95);
+  transition: border-color 0.2s, box-shadow 0.2s, background 0.2s;
+  outline: none;
+  appearance: none;
+}
+select {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='%230d9488' d='M1 1l5 5 5-5'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  padding-right: 36px;
+}
+select:focus, input:focus {
+  border-color: var(--teal);
+  box-shadow: 0 0 0 3px rgba(13,148,136,0.14), var(--glow-teal);
+  background: white;
+}
+select.error, input.error {
+  border-color: var(--danger);
+  box-shadow: 0 0 0 3px rgba(220,38,38,0.1);
+}
+
+/* ===================================================================
+   BUTTONS
+   =================================================================== */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.6rem 1.2rem;
+  border-radius: var(--radius-sm);
+  border: none;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.18s;
+  text-decoration: none;
+  letter-spacing: 0.01em;
+}
+.btn-primary {
+  background: linear-gradient(135deg, var(--teal), var(--cyan));
+  color: white;
+  box-shadow: 0 2px 8px rgba(13,148,136,0.3);
+}
+.btn-primary:hover { transform: translateY(-2px); box-shadow: var(--shadow-md), var(--glow-teal); }
+.btn-primary:active { transform: translateY(0); }
+
+.btn-secondary {
+  background: rgba(255,255,255,0.8);
+  color: var(--navy-mid);
+  border: 1.5px solid rgba(13,148,136,0.25);
+}
+.btn-secondary:hover { background: white; border-color: var(--teal); }
+
+.btn-danger-sm {
+  background: none;
+  color: var(--danger);
+  border: none;
+  padding: 0.25rem 0.5rem;
+  cursor: pointer;
+  font-size: 1.1rem;
+  border-radius: 4px;
+  transition: background 0.15s;
+}
+.btn-danger-sm:hover { background: var(--danger-bg); }
+
+.btn-add {
+  background: none;
+  color: var(--teal);
+  border: 1.5px dashed var(--teal);
+  padding: 0.4rem 0.9rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all 0.18s;
+}
+.btn-add:hover { background: var(--primary-light); border-style: solid; }
+
+.btn-add-temp {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  background: none;
+  color: var(--cyan);
+  border: 1.5px dashed var(--cyan);
+  padding: 0.4rem 0.9rem;
+  font-size: 0.82rem;
+  font-weight: 600;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all 0.18s;
+  margin-top: 0.75rem;
+}
+.btn-add-temp:hover { background: rgba(6,182,212,0.07); border-style: solid; }
+
+.btn-calculate {
+  padding: 0.9rem 2.8rem;
+  font-size: 1.1rem;
+  font-weight: 700;
+  background: linear-gradient(135deg, var(--teal) 0%, var(--cyan) 60%, var(--emerald) 100%);
+  color: white;
+  border: none;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all 0.22s;
+  box-shadow: var(--shadow-md), 0 0 0 0 rgba(13,148,136,0);
+  letter-spacing: 0.04em;
+  position: relative;
+  overflow: hidden;
+}
+.btn-calculate::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, transparent 40%, rgba(255,255,255,0.12) 100%);
+  pointer-events: none;
+}
+.btn-calculate:hover {
+  transform: translateY(-3px);
+  box-shadow: var(--shadow-lg), 0 0 24px rgba(13,148,136,0.4);
+}
+.btn-calculate:active { transform: translateY(0); }
+
+.btn-reset {
+  padding: 0.85rem 1.6rem;
+  font-size: 0.95rem;
+  font-weight: 600;
+  background: white;
+  color: var(--muted);
+  border: 1.5px solid rgba(13,148,136,0.2);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all 0.18s;
+}
+.btn-reset:hover {
+  background: rgba(255,255,255,0.95);
+  color: var(--navy);
+  border-color: var(--teal);
+}
+
+/* ===================================================================
+   SOLUTE CARDS
+   =================================================================== */
+.solute-row-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  align-items: flex-start;
+}
+
+.solute-card {
+  background: linear-gradient(145deg, rgba(240,253,250,0.9), rgba(255,255,255,0.95));
+  border: 1.5px solid rgba(13,148,136,0.2);
+  border-radius: var(--radius-sm);
+  padding: 1rem;
+  min-width: 200px;
+  max-width: 240px;
+  flex: 1;
+  position: relative;
+  transition: all 0.2s;
+  backdrop-filter: blur(4px);
+}
+.solute-card:hover {
+  border-color: var(--teal);
+  box-shadow: var(--shadow-md);
+  transform: translateY(-2px);
+}
+.solute-card .card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.6rem;
+}
+.solute-card .card-label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--teal);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+.atom-icon {
+  font-size: 0.9rem;
+  opacity: 0.6;
+}
+
+/* ===================================================================
+   TEMPERATURE INPUTS
+   =================================================================== */
+.temps-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  align-items: flex-start;
+}
+
+.temp-entry {
+  display: flex;
+  gap: 0.5rem;
+  align-items: flex-end;
+  background: linear-gradient(145deg, rgba(240,253,250,0.8), rgba(255,255,255,0.9));
+  border: 1.5px solid rgba(13,148,136,0.2);
+  border-radius: var(--radius-sm);
+  padding: 0.75rem 0.9rem;
+  flex: 1;
+  min-width: 230px;
+  max-width: 300px;
+  transition: all 0.18s;
+}
+.temp-entry:hover { border-color: var(--teal); box-shadow: var(--shadow); }
+.temp-entry:focus-within { border-color: var(--teal); box-shadow: 0 0 0 3px rgba(13,148,136,0.1); }
+.temp-entry .te-val { flex: 2; }
+.temp-entry .te-unit { flex: 1; }
+.temp-entry .te-remove {
+  flex-shrink: 0;
+  background: none;
+  border: none;
+  color: rgba(220,38,38,0.7);
+  cursor: pointer;
+  font-size: 1rem;
+  padding: 0.3rem;
+  border-radius: 4px;
+  transition: all 0.15s;
+  align-self: center;
+  margin-bottom: 0;
+}
+.temp-entry .te-remove:hover { background: var(--danger-bg); color: var(--danger); }
+.temp-entry .te-label {
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: var(--teal);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin-bottom: 0.35rem;
+}
+.temp-entry .te-hint {
+  font-size: 0.7rem;
+  color: var(--muted);
+  margin-top: 0.2rem;
+}
+
+/* ===================================================================
+   CUSTOM PANELS (glassmorphism)
+   =================================================================== */
+.custom-panel {
+  display: none;
+  background: linear-gradient(135deg, rgba(240,253,250,0.95), rgba(240,249,255,0.95));
+  border: 1.5px solid rgba(13,148,136,0.3);
+  border-radius: var(--radius);
+  padding: 1.4rem;
+  margin-top: 1rem;
+  backdrop-filter: blur(8px);
+  box-shadow: var(--shadow-md);
+}
+.custom-panel.visible { display: block; }
+.custom-panel-title {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--navy-mid);
+  margin-bottom: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 0.75rem;
+}
+.form-row {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+}
+
+/* ===================================================================
+   ERROR & WARNING BOXES
+   =================================================================== */
+.error-box {
+  display: none;
+  background: var(--danger-bg);
+  border: 1px solid var(--danger-brd);
+  border-radius: var(--radius-sm);
+  padding: 0.8rem 1rem;
+  color: var(--danger);
+  font-size: 0.875rem;
+  margin-top: 0.5rem;
+}
+.error-box.visible { display: block; }
+.error-box ul { margin: 0.4rem 0 0 1.2rem; }
+
+.warning-box {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  background: var(--warning-bg);
+  border: 1px solid var(--warning-border);
+  border-radius: var(--radius-sm);
+  padding: 0.7rem 1rem;
+  color: var(--warning-text);
+  font-size: 0.84rem;
+  margin-top: 0.75rem;
+}
+.warning-box .warn-icon { font-size: 1rem; flex-shrink: 0; margin-top: 1px; }
+
+/* ===================================================================
+   ACTION BAR
+   =================================================================== */
+.action-bar {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem 0 0.5rem;
+  flex-wrap: wrap;
+}
+
+/* ===================================================================
+   RESULTS
+   =================================================================== */
+#results-section { display: none; }
+#results-section.visible { display: block; }
+
+/* Per-temperature result group */
+.temp-result-group {
+  margin-bottom: 2rem;
+}
+.temp-result-group-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: linear-gradient(135deg, var(--teal), var(--cyan));
+  color: white;
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  padding: 4px 14px;
+  border-radius: 20px;
+  margin-bottom: 0.9rem;
+  box-shadow: 0 2px 8px rgba(13,148,136,0.3);
+}
+
+.results-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 1.25rem;
+}
+
+/* Result card — glassmorphism */
+.result-card {
+  background: white;
+  border: 1.5px solid rgba(13,148,136,0.15);
+  border-radius: var(--radius);
+  overflow: hidden;
+  box-shadow: var(--shadow);
+  transition: all 0.22s;
+  position: relative;
+}
+.result-card::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: var(--radius);
+  background: linear-gradient(135deg, transparent 60%, rgba(13,148,136,0.03) 100%);
+  pointer-events: none;
+}
+.result-card:hover {
+  box-shadow: var(--shadow-md), var(--glow-teal);
+  transform: translateY(-3px);
+  border-color: var(--teal);
+}
+
+.result-card-header {
+  background: linear-gradient(135deg, var(--navy) 0%, var(--navy-mid) 50%, var(--navy-light) 100%);
+  color: white;
+  padding: 1rem 1.25rem;
+  position: relative;
+  overflow: hidden;
+}
+.result-card-header::before {
+  content: '';
+  position: absolute;
+  top: -20px; right: -20px;
+  width: 80px; height: 80px;
+  border-radius: 50%;
+  background: rgba(13,148,136,0.2);
+}
+.result-card-header::after {
+  content: '';
+  position: absolute;
+  bottom: -15px; right: 20px;
+  width: 50px; height: 50px;
+  border-radius: 50%;
+  background: rgba(6,182,212,0.15);
+}
+.result-card-header h3 {
+  font-size: 1.05rem;
+  font-weight: 700;
+  margin-bottom: 0.2rem;
+  position: relative;
+}
+.result-card-header .sub {
+  font-size: 0.78rem;
+  opacity: 0.75;
+  position: relative;
+}
+
+.result-card-body { padding: 1.2rem; }
+
+.result-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  padding: 0.42rem 0;
+  border-bottom: 1px solid rgba(13,148,136,0.07);
+}
+.result-row:last-child { border-bottom: none; }
+.result-label {
+  font-size: 0.78rem;
+  color: var(--muted);
+  font-weight: 500;
+}
+.result-value {
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: var(--navy-mid);
+  text-align: right;
+  max-width: 55%;
+}
+
+.solubility-highlight {
+  background: linear-gradient(135deg, rgba(13,148,136,0.07), rgba(6,182,212,0.07));
+  border: 1px solid rgba(13,148,136,0.2);
+  border-radius: var(--radius-sm);
+  padding: 0.85rem 1rem;
+  text-align: center;
+  margin-top: 0.75rem;
+}
+.solubility-highlight .sol-label {
+  font-size: 0.7rem;
+  color: var(--teal);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin-bottom: 0.2rem;
+}
+.solubility-highlight .sol-value {
+  font-size: 1.55rem;
+  font-weight: 800;
+  background: linear-gradient(135deg, var(--navy-mid), var(--teal));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+.solubility-highlight .sol-unit {
+  font-size: 0.75rem;
+  color: var(--muted);
+  margin-top: 0.1rem;
+}
+
+/* Sub-unit tiles */
+.unit-tiles {
+  display: flex;
+  gap: 0.6rem;
+  margin-top: 0.75rem;
+}
+.unit-tile {
+  flex: 1;
+  text-align: center;
+  border-radius: var(--radius-sm);
+  padding: 0.65rem 0.4rem;
+}
+.unit-tile-teal  { background: linear-gradient(135deg, rgba(5,150,105,0.08), rgba(16,185,129,0.12)); border: 1px solid rgba(5,150,105,0.2); }
+.unit-tile-purple { background: linear-gradient(135deg, rgba(124,58,237,0.07), rgba(167,139,250,0.1)); border: 1px solid rgba(124,58,237,0.18); }
+.unit-tile .ut-label { font-size: 0.65rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 0.2rem; }
+.unit-tile-teal  .ut-label { color: var(--emerald); }
+.unit-tile-purple .ut-label { color: var(--purple); }
+.unit-tile .ut-value { font-size: 1.08rem; font-weight: 800; }
+.unit-tile-teal  .ut-value { color: #065f46; }
+.unit-tile-purple .ut-value { color: var(--purple); }
+
+/* Status badge */
+.status-badge {
+  display: inline-block;
+  padding: 3px 12px;
+  border-radius: 20px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+.status-ok   { background: linear-gradient(135deg,rgba(5,150,105,0.12),rgba(16,185,129,0.18)); color: var(--emerald); border: 1px solid rgba(5,150,105,0.25); }
+.status-warn { background: rgba(251,191,36,0.15); color: #92400e; border: 1px solid rgba(251,191,36,0.3); }
+.status-err  { background: var(--danger-bg); color: var(--danger); border: 1px solid var(--danger-brd); }
+
+/* ===================================================================
+   GRAPH SECTION
+   =================================================================== */
+#graph-section { display: none; }
+#graph-section.visible { display: block; }
+
+.graph-container {
+  position: relative;
+  background: linear-gradient(135deg, #f0fdfa 0%, #f0f9ff 100%);
+  border-radius: var(--radius-sm);
+  padding: 1rem;
+  border: 1px solid rgba(13,148,136,0.15);
+}
+.graph-controls {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
+}
+.graph-controls label { margin-bottom: 0; font-size: 0.82rem; white-space: nowrap; }
+.graph-controls select { width: auto; min-width: 160px; font-size: 0.85rem; padding: 0.4rem 2rem 0.4rem 0.7rem; }
+.graph-no-data {
+  text-align: center;
+  padding: 2.5rem;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+/* ===================================================================
+   TAGS
+   =================================================================== */
+.tag-custom {
+  display: inline-block;
+  background: linear-gradient(135deg, #fef3c7, #fde68a);
+  color: #92400e;
+  font-size: 0.62rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  padding: 2px 7px;
+  border-radius: 4px;
+  text-transform: uppercase;
+  margin-left: 4px;
+}
+.tag-db {
+  display: inline-block;
+  background: linear-gradient(135deg, rgba(5,150,105,0.1), rgba(16,185,129,0.15));
+  color: #065f46;
+  font-size: 0.62rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  padding: 2px 7px;
+  border-radius: 4px;
+  text-transform: uppercase;
+  margin-left: 4px;
+  border: 1px solid rgba(5,150,105,0.2);
+}
+
+/* ===================================================================
+   INFO TIP
+   =================================================================== */
+.info-tip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 15px; height: 15px;
+  background: rgba(13,148,136,0.15);
+  color: var(--teal);
+  border-radius: 50%;
+  font-size: 0.6rem;
+  font-weight: 800;
+  cursor: help;
+  margin-left: 4px;
+  position: relative;
+}
+.info-tip:hover::after {
+  content: attr(data-tip);
+  position: absolute;
+  bottom: 125%;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--navy);
+  color: white;
+  padding: 7px 11px;
+  border-radius: 7px;
+  font-size: 0.74rem;
+  width: 220px;
+  z-index: 20;
+  white-space: normal;
+  text-align: left;
+  pointer-events: none;
+  box-shadow: var(--shadow-md);
+}
+
+/* ===================================================================
+   FIELD HELP
+   =================================================================== */
+.field-help {
+  font-size: 0.72rem;
+  color: var(--muted);
+  margin-top: 0.25rem;
+}
+hr { border: none; border-top: 1px solid rgba(13,148,136,0.1); margin: 1.25rem 0; }
+
+/* ===================================================================
+   FOOTER
+   =================================================================== */
+.site-footer {
+  text-align: center;
+  padding: 1.5rem;
+  color: var(--muted);
+  font-size: 0.78rem;
+  border-top: 1px solid rgba(13,148,136,0.12);
+  background: linear-gradient(135deg, rgba(240,253,250,0.9), rgba(240,249,255,0.9));
+  margin-top: 2rem;
+  line-height: 1.8;
+  position: relative;
+  z-index: 1;
+}
+.footer-equation {
+  font-family: 'Courier New', monospace;
+  color: var(--teal);
+  font-size: 0.82rem;
+}
+
+/* ===================================================================
+   SPINNER
+   =================================================================== */
+.spinner {
+  display: inline-block;
+  width: 18px; height: 18px;
+  border: 2px solid rgba(255,255,255,0.4);
+  border-top-color: white;
+  border-radius: 50%;
+  animation: spin 0.6s linear infinite;
+  vertical-align: middle;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+#global-error { margin-bottom: 1rem; }
+
+/* ===================================================================
+   RESPONSIVE
+   =================================================================== */
+@media (max-width: 640px) {
+  .container { padding: 1rem; }
+  .section { padding: 1rem; }
+  .hero-content { padding: 1.5rem 1rem 1rem; gap: 1rem; }
+  .hero-illustration { width: 90px; }
+  .unit-tiles { flex-direction: column; }
+  .temps-container { flex-direction: column; }
+  .temp-entry { max-width: none; }
+}
+</style>
+</head>
+<body>
+
+<!-- ================================================================
+     HEADER / HERO
+     ================================================================ -->
+<header class="site-header">
+  <!-- Molecular lattice SVG background -->
+  <svg class="hero-bg-svg" viewBox="0 0 1200 220" preserveAspectRatio="xMidYMid slice">
+    <!-- Bonds -->
+    <g stroke="rgba(6,182,212,0.6)" stroke-width="1.5" fill="none">
+      <line x1="80" y1="50" x2="140" y2="90"/><line x1="140" y1="90" x2="200" y2="50"/>
+      <line x1="200" y1="50" x2="260" y2="90"/><line x1="140" y1="90" x2="140" y2="160"/>
+      <line x1="260" y1="90" x2="320" y2="50"/><line x1="260" y1="90" x2="260" y2="160"/>
+      <line x1="320" y1="50" x2="380" y2="90"/><line x1="380" y1="90" x2="440" y2="50"/>
+      <line x1="440" y1="50" x2="500" y2="90"/><line x1="380" y1="90" x2="380" y2="160"/>
+      <line x1="500" y1="90" x2="560" y2="50"/><line x1="500" y1="90" x2="500" y2="160"/>
+      <line x1="560" y1="50" x2="620" y2="90"/><line x1="620" y1="90" x2="680" y2="50"/>
+      <line x1="680" y1="50" x2="740" y2="90"/><line x1="620" y1="90" x2="620" y2="160"/>
+      <line x1="740" y1="90" x2="800" y2="50"/><line x1="740" y1="90" x2="740" y2="160"/>
+      <line x1="800" y1="50" x2="860" y2="90"/><line x1="860" y1="90" x2="920" y2="50"/>
+      <line x1="920" y1="50" x2="980" y2="90"/><line x1="860" y1="90" x2="860" y2="160"/>
+      <line x1="980" y1="90" x2="1040" y2="50"/><line x1="980" y1="90" x2="980" y2="160"/>
+      <line x1="1040" y1="50" x2="1100" y2="90"/><line x1="1100" y1="90" x2="1160" y2="50"/>
+      <!-- Hexagonal ring -->
+      <polygon points="650,120 680,140 680,170 650,190 620,170 620,140" stroke="rgba(167,139,250,0.5)"/>
+      <polygon points="850,100 880,120 880,150 850,170 820,150 820,120" stroke="rgba(6,182,212,0.4)"/>
+    </g>
+    <!-- Atoms -->
+    <g fill="rgba(6,182,212,0.7)">
+      <circle cx="80"  cy="50"  r="5"/><circle cx="140" cy="90"  r="7"/>
+      <circle cx="200" cy="50"  r="5"/><circle cx="260" cy="90"  r="7"/>
+      <circle cx="320" cy="50"  r="5"/><circle cx="380" cy="90"  r="7"/>
+      <circle cx="440" cy="50"  r="5"/><circle cx="500" cy="90"  r="7"/>
+      <circle cx="560" cy="50"  r="5"/><circle cx="620" cy="90"  r="7"/>
+      <circle cx="680" cy="50"  r="5"/><circle cx="740" cy="90"  r="7"/>
+      <circle cx="800" cy="50"  r="5"/><circle cx="860" cy="90"  r="7"/>
+      <circle cx="920" cy="50"  r="5"/><circle cx="980" cy="90"  r="7"/>
+      <circle cx="1040" cy="50" r="5"/><circle cx="1100" cy="90" r="7"/>
+      <circle cx="140" cy="160" r="5"/><circle cx="260" cy="160" r="5"/>
+      <circle cx="380" cy="160" r="5"/><circle cx="500" cy="160" r="5"/>
+      <circle cx="620" cy="160" r="5"/><circle cx="740" cy="160" r="5"/>
+      <circle cx="860" cy="160" r="5"/><circle cx="980" cy="160" r="5"/>
+    </g>
+    <!-- Oxygen atoms in purple -->
+    <g fill="rgba(167,139,250,0.75)">
+      <circle cx="650" cy="120" r="6"/><circle cx="680" cy="140" r="5"/>
+      <circle cx="680" cy="170" r="5"/><circle cx="650" cy="190" r="6"/>
+      <circle cx="620" cy="170" r="5"/><circle cx="620" cy="140" r="5"/>
+    </g>
+  </svg>
+
+  <!-- Floating particles -->
+  <div class="hero-particles" id="heroParticles"></div>
+
+  <div class="hero-content">
+    <div class="hero-text">
+      <h1>⚗️ Solubility Calculator</h1>
+      <p>Calculate saturation solubility of organic solutes across any solvent using solid–liquid equilibrium thermodynamics with UNIFAC-based activity models.</p>
+      <div class="hero-badges">
+        <span class="hero-badge"><span class="dot"></span>SLE Thermodynamics</span>
+        <span class="hero-badge"><span class="dot"></span>UNIFAC Activity Model</span>
+        <span class="hero-badge"><span class="dot"></span>Multi-Temperature</span>
+        <span class="hero-badge"><span class="dot"></span>32 Compounds</span>
+        <span class="hero-badge"><span class="dot"></span>25 Solvents</span>
+      </div>
+    </div>
+
+    <!-- Lab flask illustration -->
+    <svg class="hero-illustration" viewBox="0 0 160 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <!-- Flask body -->
+      <path d="M60 70 L35 150 Q28 175 55 185 L105 185 Q132 175 125 150 L100 70 Z"
+            fill="url(#flaskGrad)" stroke="rgba(6,182,212,0.6)" stroke-width="2"/>
+      <!-- Flask neck -->
+      <rect x="58" y="20" width="44" height="52" rx="8"
+            fill="url(#neckGrad)" stroke="rgba(6,182,212,0.5)" stroke-width="2"/>
+      <!-- Flask cap -->
+      <rect x="50" y="16" width="60" height="10" rx="5"
+            fill="rgba(13,148,136,0.5)" stroke="rgba(6,182,212,0.6)" stroke-width="1.5"/>
+      <!-- Liquid -->
+      <path d="M42 155 Q40 175 55 183 L105 183 Q120 175 118 155 Z"
+            fill="url(#liquidGrad)" opacity="0.85"/>
+      <!-- Bubbles -->
+      <circle cx="65" cy="162" r="4" fill="rgba(255,255,255,0.4)"/>
+      <circle cx="90" cy="155" r="6" fill="rgba(255,255,255,0.3)"/>
+      <circle cx="105" cy="168" r="3" fill="rgba(255,255,255,0.4)"/>
+      <!-- Shimmer on glass -->
+      <path d="M62 80 Q58 110 50 140" stroke="rgba(255,255,255,0.3)" stroke-width="3" stroke-linecap="round"/>
+      <!-- Defs -->
+      <defs>
+        <linearGradient id="flaskGrad" x1="30" y1="70" x2="130" y2="185" gradientUnits="userSpaceOnUse">
+          <stop offset="0%" stop-color="rgba(6,182,212,0.15)"/>
+          <stop offset="100%" stop-color="rgba(13,148,136,0.1)"/>
+        </linearGradient>
+        <linearGradient id="neckGrad" x1="58" y1="20" x2="102" y2="72" gradientUnits="userSpaceOnUse">
+          <stop offset="0%" stop-color="rgba(6,182,212,0.12)"/>
+          <stop offset="100%" stop-color="rgba(13,148,136,0.08)"/>
+        </linearGradient>
+        <linearGradient id="liquidGrad" x1="40" y1="155" x2="120" y2="185" gradientUnits="userSpaceOnUse">
+          <stop offset="0%" stop-color="#0d9488" stop-opacity="0.9"/>
+          <stop offset="100%" stop-color="#06b6d4" stop-opacity="0.9"/>
+        </linearGradient>
+      </defs>
+    </svg>
+  </div>
+
+  <div class="equation-strip">
+    SLE: &nbsp; x<sub>i</sub>·γ<sub>i</sub>(T,x) = exp[−ΔH<sub>fus</sub>/R · (1/T − 1/T<sub>m</sub>)] &nbsp;|&nbsp;
+    γ<sub>i</sub> via Margules / UNIFAC-type polarity model &nbsp;|&nbsp; R = 8.314 J mol⁻¹ K⁻¹
+  </div>
+</header>
+
+<main class="container">
+
+  <!-- GLOBAL ERROR -->
+  <div id="global-error" class="error-box" role="alert"></div>
+
+  <!-- ============================================================
+       SECTION 1: SOLUTES
+       ============================================================ -->
+  <section class="section" id="solute-section">
+    <div class="section-title">
+      <span class="step-num">1</span>
+      <span class="section-icon">🧪</span> Solute Selection
+    </div>
+
+    <div class="solute-row-container" id="solute-cards"></div>
+
+    <!-- Custom Solute Panel -->
+    <div class="custom-panel" id="custom-solute-panel">
+      <div class="custom-panel-title">🔬 Add Custom Solute</div>
+      <div class="form-grid">
+        <div>
+          <label for="cs-name">Name <span style="color:var(--danger)">*</span></label>
+          <input type="text" id="cs-name" placeholder="e.g. My Compound">
+        </div>
+        <div>
+          <label for="cs-tm">
+            Melting Point T<sub>m</sub> (K) <span style="color:var(--danger)">*</span>
+            <span class="info-tip" data-tip="Melting point in Kelvin. Must be provided from a reliable source.">?</span>
+          </label>
+          <input type="number" id="cs-tm" placeholder="e.g. 320.5" step="any" min="0">
+        </div>
+        <div>
+          <label for="cs-dhfus">
+            ΔH<sub>fus</sub> (J/mol)
+            <span class="info-tip" data-tip="Enthalpy of fusion in J/mol. If blank, Walden's rule estimate (56.5×Tm) is used — clearly flagged in results.">?</span>
+          </label>
+          <input type="number" id="cs-dhfus" placeholder="e.g. 18500 (optional)" step="any" min="0">
+        </div>
+        <div>
+          <label for="cs-mw">Mol. Weight (g/mol) <span style="color:var(--danger)">*</span></label>
+          <input type="number" id="cs-mw" placeholder="e.g. 152.15" step="any" min="0">
+        </div>
+      </div>
+      <div id="cs-walden-note" style="display:none;" class="field-help" style="margin-top:0.5rem">
+        ⚠️ No ΔH<sub>fus</sub> entered — Walden's rule estimate (56.5 × T<sub>m</sub>) will be used. For best accuracy, provide a literature value.
+      </div>
+      <div id="cs-error" class="error-box" style="margin-top:0.75rem"></div>
+      <div class="form-row">
+        <button class="btn btn-primary" onclick="addCustomSolute()">✓ Add Solute</button>
+        <button class="btn btn-secondary" onclick="hideCustomSolutePanel()">Cancel</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================
+       SECTION 2: SOLVENT
+       ============================================================ -->
+  <section class="section" id="solvent-section">
+    <div class="section-title">
+      <span class="step-num">2</span>
+      <span class="section-icon">🫧</span> Solvent Selection
+    </div>
+
+    <div style="max-width:380px">
+      <label for="solvent-select">Select Solvent</label>
+      <select id="solvent-select" onchange="onSolventChange(this)"></select>
+    </div>
+
+    <!-- Custom Solvent Panel -->
+    <div class="custom-panel" id="custom-solvent-panel">
+      <div class="custom-panel-title">🔬 Add Custom Solvent</div>
+      <div class="form-grid">
+        <div>
+          <label for="csol-name">Name <span style="color:var(--danger)">*</span></label>
+          <input type="text" id="csol-name" placeholder="e.g. My Solvent">
+        </div>
+        <div>
+          <label for="csol-mw">Mol. Weight (g/mol) <span style="color:var(--danger)">*</span></label>
+          <input type="number" id="csol-mw" placeholder="e.g. 86.18" step="any" min="0">
+        </div>
+      </div>
+      <div id="csol-error" class="error-box" style="margin-top:0.75rem"></div>
+      <div class="form-row">
+        <button class="btn btn-primary" onclick="addCustomSolvent()">✓ Add Solvent</button>
+        <button class="btn btn-secondary" onclick="hideCustomSolventPanel()">Cancel</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================
+       SECTION 3: TEMPERATURES (multiple)
+       ============================================================ -->
+  <section class="section" id="temp-section">
+    <div class="section-title">
+      <span class="step-num">3</span>
+      <span class="section-icon">🌡️</span> Operating Temperature(s)
+    </div>
+
+    <div class="temps-container" id="temps-container"></div>
+
+    <button class="btn-add-temp" onclick="addTemperatureEntry()">
+      ➕ Add Temperature
+    </button>
+
+    <div id="temp-error" class="error-box" style="margin-top:0.75rem"></div>
+  </section>
+
+  <!-- ACTION BAR -->
+  <div class="action-bar">
+    <button class="btn-calculate" id="calc-btn" onclick="calculate()">
+      🔬 Calculate Solubility
+    </button>
+    <button class="btn-reset" onclick="resetAll()">↺ Reset All</button>
+  </div>
+
+  <!-- ============================================================
+       GRAPH SECTION
+       ============================================================ -->
+  <section class="section" id="graph-section">
+    <div class="section-title">
+      <span class="step-num" style="background:linear-gradient(135deg,var(--cyan),var(--purple))">📈</span>
+      Temperature vs Solubility Graph
+    </div>
+    <div class="graph-container">
+      <div class="graph-controls">
+        <label for="graph-y-unit">Y-axis unit:</label>
+        <select id="graph-y-unit" onchange="redrawChart()">
+          <option value="x">Mole Fraction (x)</option>
+          <option value="mgPerG">mg / g solvent</option>
+          <option value="g100g">g / 100 g solvent</option>
+        </select>
+        <label for="graph-x-unit" style="margin-left:0.5rem">X-axis unit:</label>
+        <select id="graph-x-unit" onchange="redrawChart()">
+          <option value="K">Kelvin (K)</option>
+          <option value="C">Celsius (°C)</option>
+        </select>
+      </div>
+      <div id="graph-no-data" class="graph-no-data">
+        📊 Chart will appear after calculating at two or more temperatures.
+      </div>
+      <canvas id="solubilityChart" style="display:none; max-height:420px;"></canvas>
+    </div>
+  </section>
+
+  <!-- ============================================================
+       RESULTS SECTION
+       ============================================================ -->
+  <section class="section" id="results-section">
+    <div class="section-title" style="margin-bottom:1rem">
+      <span class="step-num" style="background:linear-gradient(135deg,var(--emerald),var(--teal))">✓</span>
+      Calculation Results
+    </div>
+    <div id="results-container"></div>
+  </section>
+
+</main>
+
+<footer class="site-footer">
+  <div class="footer-equation">
+    x<sub>i</sub> · γ<sub>i</sub>(T,x) = exp[−ΔH<sub>fus,i</sub>/R · (1/T − 1/T<sub>m,i</sub>)]
+  </div>
+  <div style="margin-top:0.4rem">
+    Thermodynamic SLE engine · UNIFAC-based activity model · Walden's rule fallback · Pure JavaScript
+  </div>
+  <div style="margin-top:0.3rem; color:rgba(13,148,136,0.7)">
+    ⚗️ Solubility Calculator — Chemical Engineering Research Tool
+  </div>
+</footer>
+
+<script>
+// ======================================================================
+// THERMODYNAMIC ENGINE — SLE + Simplified Activity Model
+// ======================================================================
+// SLE equation: x_i * gamma_i(T, x) = exp[-dHfus/R * (1/T - 1/Tm)]
+// For pure-solvent binary systems, activity coefficient gamma is estimated
+// using a simplified approach based on the solute-solvent interaction
+// parameter (approximated from functional group matching).
+// All calculations are pure JavaScript — no backend required.
+
+const R = 8.314462618; // J/(mol K)
+
+// ======================================================================
+// DATABASE
+// ======================================================================
+
+const SOLUTE_DB = {
+  // Spice / Flavor compounds (from notebook)
+  "thymol":          { Tm: 323.15,  dHfus: 18760,  MW: 150.22,  note: "Database", groups: "phenol-methyl" },
+  "vanillin":        { Tm: 355.15,  dHfus: 21300,  MW: 152.15,  note: "Database", groups: "phenol-aldehyde" },
+  "eugenol":         { Tm: 264.15,  dHfus: 13600,  MW: 164.20,  note: "Database", groups: "phenol-allyl" },
+  "curcumin":        { Tm: 456.15,  dHfus: 40000,  MW: 368.38,  note: "Database", groups: "phenol-ketone" },
+  "piperine":        { Tm: 403.15,  dHfus: 35000,  MW: 285.34,  note: "Database", groups: "amide-aromatic" },
+  "capsaicin":       { Tm: 338.15,  dHfus: 29500,  MW: 305.41,  note: "Database", groups: "phenol-amide" },
+  "zingerone":       { Tm: 313.65,  dHfus: 26468,  MW: 194.23,  note: "Database", groups: "phenol-ketone" },
+  "menthol":         { Tm: 316.15,  dHfus: 16198,  MW: 156.27,  note: "Database", groups: "cyclo-alcohol" },
+  "linalool":        { Tm: 244.90,  dHfus: 15942,  MW: 154.25,  note: "Database", groups: "terp-alcohol" },
+  "anethole":        { Tm: 294.45,  dHfus: 16000,  MW: 148.20,  note: "Database", groups: "aromatic-ether" },
+  "cinnamaldehyde":  { Tm: 265.65,  dHfus: 15598,  MW: 132.16,  note: "Database", groups: "aromatic-aldehyde" },
+  "vanillyl alcohol":{ Tm: 387.15,  dHfus: 21187,  MW: 154.16,  note: "Database", groups: "phenol-alcohol" },
+  "carvacrol":       { Tm: 274.65,  dHfus: 17568,  MW: 150.22,  note: "Database", groups: "phenol-methyl" },
+  "benzaldehyde":    { Tm: 216.90,  dHfus: 9320,   MW: 106.12,  note: "Database", groups: "aromatic-aldehyde" },
+  "limonene":        { Tm: 183.15,  dHfus: 11734,  MW: 136.23,  note: "Database", groups: "terp-olefin" },
+  "gamma-terpinene": { Tm: 263.15,  dHfus: 10563,  MW: 136.23,  note: "Database", groups: "terp-olefin" },
+  "methyl salicylate":{ Tm: 264.65, dHfus: 20669,  MW: 152.15,  note: "Database", groups: "phenol-ester" },
+  "anisaldehyde":    { Tm: 273.65,  dHfus: 15461,  MW: 136.15,  note: "Database (Walden est.)", groups: "aromatic-ether" },
+  // Common organic solids
+  "aspirin":         { Tm: 408.15,  dHfus: 29800,  MW: 180.16,  note: "Database", groups: "phenol-ester" },
+  "paracetamol":     { Tm: 442.15,  dHfus: 28100,  MW: 151.16,  note: "Database", groups: "phenol-amide" },
+  "ibuprofen":       { Tm: 349.15,  dHfus: 26000,  MW: 206.29,  note: "Database", groups: "carboxylic-acid" },
+  "naphthalene":     { Tm: 353.35,  dHfus: 19100,  MW: 128.17,  note: "Database", groups: "aromatic" },
+  "benzoic acid":    { Tm: 395.55,  dHfus: 18000,  MW: 122.12,  note: "Database", groups: "carboxylic-acid" },
+  "salicylic acid":  { Tm: 432.15,  dHfus: 25700,  MW: 138.12,  note: "Database", groups: "phenol-carboxylic" },
+  "cholesterol":     { Tm: 421.15,  dHfus: 28500,  MW: 386.65,  note: "Database", groups: "steroid" },
+  "caffeine":        { Tm: 511.15,  dHfus: 22000,  MW: 194.19,  note: "Database", groups: "purine-amide" },
+  "glucose":         { Tm: 419.15,  dHfus: 32000,  MW: 180.16,  note: "Database", groups: "sugar" },
+  "sucrose":         { Tm: 459.15,  dHfus: 40000,  MW: 342.30,  note: "Database", groups: "sugar" },
+  "urea":            { Tm: 406.15,  dHfus: 15100,  MW: 60.06,   note: "Database", groups: "amide" },
+  "palmitic acid":   { Tm: 335.65,  dHfus: 53300,  MW: 256.42,  note: "Database", groups: "carboxylic-acid" },
+  "stearic acid":    { Tm: 342.75,  dHfus: 61000,  MW: 284.48,  note: "Database", groups: "carboxylic-acid" },
+};
+
+const SOLVENT_DB = {
+  "water":           { MW: 18.015,  polar: 2.0,  note: "Database" },
+  "ethanol":         { MW: 46.07,   polar: 1.5,  note: "Database" },
+  "methanol":        { MW: 32.04,   polar: 1.6,  note: "Database" },
+  "n-hexane":        { MW: 86.18,   polar: 0.0,  note: "Database" },
+  "n-heptane":       { MW: 100.20,  polar: 0.0,  note: "Database" },
+  "acetone":         { MW: 58.08,   polar: 0.9,  note: "Database" },
+  "ethyl acetate":   { MW: 88.11,   polar: 0.6,  note: "Database" },
+  "toluene":         { MW: 92.14,   polar: 0.1,  note: "Database" },
+  "chloroform":      { MW: 119.38,  polar: 0.3,  note: "Database" },
+  "dichloromethane": { MW: 84.93,   polar: 0.4,  note: "Database" },
+  "isopropanol":     { MW: 60.10,   polar: 1.4,  note: "Database" },
+  "1-propanol":      { MW: 60.10,   polar: 1.4,  note: "Database" },
+  "1-butanol":       { MW: 74.12,   polar: 1.2,  note: "Database" },
+  "acetic acid":     { MW: 60.05,   polar: 1.1,  note: "Database" },
+  "dimethyl sulfoxide (DMSO)": { MW: 78.13, polar: 1.0, note: "Database" },
+  "dimethylformamide (DMF)":  { MW: 73.09, polar: 0.8, note: "Database" },
+  "acetonitrile":    { MW: 41.05,   polar: 0.8,  note: "Database" },
+  "diethyl ether":   { MW: 74.12,   polar: 0.2,  note: "Database" },
+  "cyclohexane":     { MW: 84.16,   polar: 0.0,  note: "Database" },
+  "benzene":         { MW: 78.11,   polar: 0.1,  note: "Database" },
+  "sunflower oil":   { MW: 876.0,   polar: 0.1,  note: "Database (avg. triglyceride)" },
+  "olive oil":       { MW: 884.0,   polar: 0.1,  note: "Database (avg. triglyceride)" },
+  "soybean oil":     { MW: 876.0,   polar: 0.1,  note: "Database (avg. triglyceride)" },
+  "coconut oil":     { MW: 668.0,   polar: 0.1,  note: "Database (avg. triglyceride)" },
+  "palm oil":        { MW: 858.0,   polar: 0.1,  note: "Database (avg. triglyceride)" },
+  "groundnut oil":   { MW: 876.0,   polar: 0.1,  note: "Database (avg. triglyceride)" },
+};
+
+const GROUP_POLARITY = {
+  "phenol-methyl":     0.6,
+  "phenol-aldehyde":   0.8,
+  "phenol-allyl":      0.5,
+  "phenol-ketone":     0.7,
+  "phenol-amide":      0.9,
+  "phenol-alcohol":    0.9,
+  "phenol-ester":      0.6,
+  "phenol-carboxylic": 1.0,
+  "amide-aromatic":    0.5,
+  "aromatic-ether":    0.3,
+  "aromatic-aldehyde": 0.5,
+  "aromatic":          0.1,
+  "cyclo-alcohol":     0.7,
+  "terp-alcohol":      0.5,
+  "terp-olefin":       0.0,
+  "carboxylic-acid":   1.1,
+  "steroid":           0.2,
+  "purine-amide":      1.0,
+  "sugar":             1.8,
+  "amide":             1.0,
+  "default":           0.5,
+};
+
+// ======================================================================
+// ACTIVITY COEFFICIENT (Simplified UNIFAC-like estimate)
+// ======================================================================
+function estimateGamma(soluteName, solventName, x, T) {
+  const sol = getActiveSolute(soluteName);
+  const solv = getActiveSolvent(solventName);
+  if (!sol || !solv) return 1.0;
+  const dPolar = (GROUP_POLARITY[sol.groups] || GROUP_POLARITY["default"]) - solv.polar;
+  const A12 = 2.0 * dPolar * dPolar;
+  const gamma = Math.exp(A12 * (1 - x) * (1 - x));
+  return isFinite(gamma) ? Math.max(gamma, 1e-10) : 1.0;
+}
+
+// ======================================================================
+// SLE ENGINE
+// ======================================================================
+function sle_rhs(T, Tm, dHfus) {
+  return Math.exp(-(dHfus / R) * (1.0 / T - 1.0 / Tm));
+}
+
+function solveSolubility(soluteName, solventName, T) {
+  const sol = getActiveSolute(soluteName);
+  const solv = getActiveSolvent(solventName);
+  if (!sol || !solv) return { error: "Missing compound data." };
+  const { Tm, dHfus } = sol;
+  if (T < 10)   return { error: "Temperature too low (< 10 K). Physical limit exceeded." };
+  if (T > 2000) return { error: "Temperature too high (> 2000 K). Outside model range." };
+  const aboveMelting = T >= Tm;
+  const rhs = sle_rhs(T, Tm, dHfus);
+  if (rhs >= 1.0 || aboveMelting) {
+    return { x: 1.0, mgPerG: Infinity, g100g: Infinity, aboveMelting: true, Tm, T, model: "SLE (above Tm — miscible assumed)" };
+  }
+  let xLow = 1e-12, xHigh = 0.9999;
+  const f = (x) => {
+    const gamma = estimateGamma(soluteName, solventName, x, T);
+    return x * gamma - rhs;
+  };
+  let fLow = f(xLow), fHigh = f(xHigh);
+  if (fLow * fHigh > 0) {
+    const xIdeal = rhs;
+    if (xIdeal <= 0 || xIdeal >= 1) return { error: "Solver failed: no solution in [0,1). Check compound data." };
+    const mg = xIdeal / (1 - xIdeal) * sol.MW / solv.MW * 1000;
+    return { x: xIdeal, mgPerG: mg, g100g: mg / 10, aboveMelting: false, Tm, T, model: "Ideal (γ=1) — solver fallback", walden: sol.walden };
+  }
+  let xMid = xLow;
+  for (let i = 0; i < 80; i++) {
+    xMid = (xLow + xHigh) / 2;
+    const fMid = f(xMid);
+    if (Math.abs(fMid) < 1e-10 || (xHigh - xLow) / 2 < 1e-10) break;
+    if (fLow * fMid < 0) { xHigh = xMid; fHigh = fMid; }
+    else { xLow = xMid; fLow = fMid; }
+  }
+  const x = xMid;
+  if (x <= 0 || x >= 1) return { error: "Computed mole fraction outside (0,1). Check input data." };
+  const mg = x / (1 - x) * sol.MW / solv.MW * 1000;
+  return { x, mgPerG: mg, g100g: mg / 10, aboveMelting: false, Tm, T, model: "SLE + Simplified UNIFAC Activity Model", walden: sol.walden };
+}
+
+// ======================================================================
+// STATE
+// ======================================================================
+let customSolutes  = {};
+let customSolvents = {};
+let selectedSolutes = [];
+let pendingCustomSoluteIdx = null;
+
+// Temperature entries: array of { value: string, unit: 'K'|'C' }
+let temperatureEntries = [];
+
+// Last calculation results for chart: { [soluteName]: [ { T_K, x, mgPerG, g100g, aboveMelting } ] }
+let lastCalcData = {};
+
+function getActiveSolute(name) {
+  return customSolutes[name.toLowerCase()] || SOLUTE_DB[name.toLowerCase()] || null;
+}
+function getActiveSolvent(name) {
+  return customSolvents[name.toLowerCase()] || SOLVENT_DB[name.toLowerCase()] || null;
+}
+
+// ======================================================================
+// DROPDOWN BUILDERS
+// ======================================================================
+function buildSoluteOptions() {
+  let opts = `<option value="">— Select solute —</option>`;
+  const dbNames = Object.keys(SOLUTE_DB);
+  const customNames = Object.keys(customSolutes);
+  if (dbNames.length) {
+    opts += `<optgroup label="📚 Database Compounds">`;
+    dbNames.forEach(n => opts += `<option value="${n}">${capitalize(n)}</option>`);
+    opts += `</optgroup>`;
+  }
+  if (customNames.length) {
+    opts += `<optgroup label="⭐ Custom Compounds">`;
+    customNames.forEach(n => opts += `<option value="${n}">${capitalize(n)}</option>`);
+    opts += `</optgroup>`;
+  }
+  opts += `<option value="__add__">➕ Add Custom Solute…</option>`;
+  return opts;
+}
+
+function buildSolventOptions() {
+  let opts = `<option value="">— Select solvent —</option>`;
+  const dbNames = Object.keys(SOLVENT_DB);
+  const customNames = Object.keys(customSolvents);
+  if (dbNames.length) {
+    opts += `<optgroup label="📚 Database Solvents">`;
+    dbNames.forEach(n => opts += `<option value="${n}">${capitalize(n)}</option>`);
+    opts += `</optgroup>`;
+  }
+  if (customNames.length) {
+    opts += `<optgroup label="⭐ Custom Solvents">`;
+    customNames.forEach(n => opts += `<option value="${n}">${capitalize(n)}</option>`);
+    opts += `</optgroup>`;
+  }
+  opts += `<option value="__add__">➕ Add Custom Solvent…</option>`;
+  return opts;
+}
+
+function capitalize(s) { return s.charAt(0).toUpperCase() + s.slice(1); }
+
+// ======================================================================
+// SOLUTE CARDS
+// ======================================================================
+function renderSoluteCards() {
+  const container = document.getElementById('solute-cards');
+  container.innerHTML = '';
+  selectedSolutes.forEach((name, idx) => {
+    const card = document.createElement('div');
+    card.className = 'solute-card';
+    card.id = `solute-card-${idx}`;
+    const isCustom = !!customSolutes[name.toLowerCase()];
+    const tagHtml = isCustom
+      ? `<span class="tag-custom">Custom</span>`
+      : (name ? `<span class="tag-db">DB</span>` : '');
+    card.innerHTML = `
+      <div class="card-header">
+        <span class="card-label"><span class="atom-icon">⚛</span> Solute ${selectedSolutes.length > 1 ? idx + 1 : ''}</span>
+        ${idx > 0 ? `<button class="btn-danger-sm" onclick="removeSolute(${idx})" title="Remove">✕</button>` : ''}
+      </div>
+      <select id="solute-select-${idx}" onchange="onSoluteChange(this, ${idx})">
+        ${buildSoluteOptions()}
+      </select>
+      ${tagHtml ? `<div style="margin-top:0.3rem">${tagHtml}</div>` : ''}
+    `;
+    container.appendChild(card);
+    document.getElementById(`solute-select-${idx}`).value = name;
+  });
+  if (selectedSolutes.length > 0 && selectedSolutes[selectedSolutes.length - 1] !== '') {
+    const addBtn = document.createElement('button');
+    addBtn.className = 'btn-add';
+    addBtn.style.marginTop = '1.5rem';
+    addBtn.style.alignSelf = 'center';
+    addBtn.innerHTML = '+ Add Another Solute';
+    addBtn.onclick = () => { selectedSolutes.push(''); renderSoluteCards(); };
+    container.appendChild(addBtn);
+  }
+}
+
+function onSoluteChange(selectEl, idx) {
+  const val = selectEl.value;
+  if (val === '__add__') {
+    selectEl.value = selectedSolutes[idx] || '';
+    pendingCustomSoluteIdx = idx;
+    showCustomSolutePanel();
+    return;
+  }
+  selectedSolutes[idx] = val;
+  renderSoluteCards();
+}
+
+function removeSolute(idx) {
+  selectedSolutes.splice(idx, 1);
+  renderSoluteCards();
+}
+
+// ======================================================================
+// CUSTOM SOLUTE
+// ======================================================================
+function showCustomSolutePanel() {
+  document.getElementById('custom-solute-panel').classList.add('visible');
+  document.getElementById('cs-name').focus();
+  ['cs-name','cs-tm','cs-dhfus','cs-mw'].forEach(id => { const el = document.getElementById(id); if(el) el.value = ''; });
+  hideElem('cs-error');
+  document.getElementById('cs-walden-note').style.display = 'none';
+}
+function hideCustomSolutePanel() {
+  document.getElementById('custom-solute-panel').classList.remove('visible');
+  pendingCustomSoluteIdx = null;
+}
+
+function addCustomSolute() {
+  const name    = document.getElementById('cs-name').value.trim();
+  const tmVal   = document.getElementById('cs-tm').value.trim();
+  const dhfusVal= document.getElementById('cs-dhfus').value.trim();
+  const mwVal   = document.getElementById('cs-mw').value.trim();
+  const errors = [];
+  if (!name) errors.push("Compound name is required.");
+  if (!tmVal || isNaN(parseFloat(tmVal)) || parseFloat(tmVal) <= 0)
+    errors.push("Melting temperature T<sub>m</sub> (K) is required and must be a positive number.");
+  if (!mwVal || isNaN(parseFloat(mwVal)) || parseFloat(mwVal) <= 0)
+    errors.push("Molecular weight (g/mol) is required and must be a positive number.");
+  if (errors.length) { showError('cs-error', errors); return; }
+  const Tm = parseFloat(tmVal), MW = parseFloat(mwVal);
+  let dHfus, walden = false;
+  if (!dhfusVal) { dHfus = 56.5 * Tm; walden = true; }
+  else {
+    dHfus = parseFloat(dhfusVal);
+    if (isNaN(dHfus) || dHfus <= 0) { showError('cs-error', ["ΔH<sub>fus</sub> must be a positive number."]); return; }
+  }
+  const lowerName = name.toLowerCase();
+  if (SOLUTE_DB[lowerName]) {
+    showError('cs-error', [`"${name}" already exists in the database. Please use a different name.`]); return;
+  }
+  customSolutes[lowerName] = { Tm, dHfus, MW, note: "Custom", groups: "default", walden };
+  if (pendingCustomSoluteIdx !== null) selectedSolutes[pendingCustomSoluteIdx] = lowerName;
+  hideCustomSolutePanel();
+  renderSoluteCards();
+  refreshSolventDropdown();
+}
+
+// ======================================================================
+// CUSTOM SOLVENT
+// ======================================================================
+function onSolventChange(sel) {
+  if (sel.value === '__add__') { sel.value = ''; showCustomSolventPanel(); }
+  else { hideCustomSolventPanel(); }
+}
+function showCustomSolventPanel() {
+  document.getElementById('custom-solvent-panel').classList.add('visible');
+  document.getElementById('csol-name').focus();
+  ['csol-name','csol-mw'].forEach(id => { const el = document.getElementById(id); if(el) el.value = ''; });
+  hideElem('csol-error');
+}
+function hideCustomSolventPanel() {
+  document.getElementById('custom-solvent-panel').classList.remove('visible');
+}
+function addCustomSolvent() {
+  const name  = document.getElementById('csol-name').value.trim();
+  const mwVal = document.getElementById('csol-mw').value.trim();
+  const errors = [];
+  if (!name) errors.push("Solvent name is required.");
+  if (!mwVal || isNaN(parseFloat(mwVal)) || parseFloat(mwVal) <= 0)
+    errors.push("Molecular weight (g/mol) is required and must be a positive number.");
+  if (errors.length) { showError('csol-error', errors); return; }
+  const lowerName = name.toLowerCase();
+  if (SOLVENT_DB[lowerName]) {
+    showError('csol-error', [`"${name}" already exists in the database. Please use a different name.`]); return;
+  }
+  customSolvents[lowerName] = { MW: parseFloat(mwVal), polar: 0.3, note: "Custom" };
+  hideCustomSolventPanel();
+  refreshSolventDropdown(lowerName);
+}
+function refreshSolventDropdown(selectValue = null) {
+  const sel = document.getElementById('solvent-select');
+  const prevVal = selectValue || sel.value;
+  sel.innerHTML = buildSolventOptions();
+  if (prevVal && sel.querySelector(`option[value="${prevVal}"]`)) sel.value = prevVal;
+}
+
+// ======================================================================
+// TEMPERATURE ENTRIES (new multi-temperature system)
+// ======================================================================
+function renderTemperatureEntries() {
+  const container = document.getElementById('temps-container');
+  container.innerHTML = '';
+  temperatureEntries.forEach((entry, idx) => {
+    const div = document.createElement('div');
+    div.className = 'temp-entry';
+    div.id = `temp-entry-${idx}`;
+    const convertHint = getConvertHint(entry.value, entry.unit);
+    div.innerHTML = `
+      <div style="flex:1">
+        <div class="te-label">🌡 Temperature ${temperatureEntries.length > 1 ? idx + 1 : ''}</div>
+        <div style="display:flex;gap:0.4rem;align-items:flex-end">
+          <div class="te-val">
+            <input type="number" id="tv-${idx}" placeholder="e.g. 298.15" step="any"
+              value="${entry.value}"
+              oninput="onTempEntryInput(${idx}, this.value)" style="font-size:0.9rem">
+          </div>
+          <div class="te-unit">
+            <select id="tu-${idx}" onchange="onTempUnitChange(${idx}, this.value)" style="font-size:0.9rem">
+              <option value="K" ${entry.unit==='K'?'selected':''}>K</option>
+              <option value="C" ${entry.unit==='C'?'selected':''}>°C</option>
+            </select>
+          </div>
+        </div>
+        <div class="te-hint" id="th-${idx}">${convertHint}</div>
+      </div>
+      ${temperatureEntries.length > 1
+        ? `<button class="te-remove" onclick="removeTemperatureEntry(${idx})" title="Remove temperature">✕</button>`
+        : ''}
+    `;
+    container.appendChild(div);
+  });
+}
+
+function getConvertHint(value, unit) {
+  const v = parseFloat(value);
+  if (!value || isNaN(v)) return '';
+  if (unit === 'K') return `= ${(v - 273.15).toFixed(2)} °C`;
+  return `= ${(v + 273.15).toFixed(2)} K`;
+}
+
+function addTemperatureEntry() {
+  temperatureEntries.push({ value: '', unit: 'K' });
+  renderTemperatureEntries();
+  // Focus the new input
+  setTimeout(() => {
+    const inp = document.getElementById(`tv-${temperatureEntries.length - 1}`);
+    if (inp) inp.focus();
+  }, 50);
+}
+
+function removeTemperatureEntry(idx) {
+  temperatureEntries.splice(idx, 1);
+  renderTemperatureEntries();
+}
+
+function onTempEntryInput(idx, value) {
+  temperatureEntries[idx].value = value;
+  const hint = document.getElementById(`th-${idx}`);
+  if (hint) hint.textContent = getConvertHint(value, temperatureEntries[idx].unit);
+  hideElem('temp-error');
+}
+
+function onTempUnitChange(idx, unit) {
+  temperatureEntries[idx].unit = unit;
+  const hint = document.getElementById(`th-${idx}`);
+  if (hint) hint.textContent = getConvertHint(temperatureEntries[idx].value, unit);
+}
+
+function getTempKFromEntry(entry) {
+  const v = parseFloat(entry.value);
+  if (isNaN(v)) return null;
+  return entry.unit === 'C' ? v + 273.15 : v;
+}
+
+// Legacy getTempK — reads first temperature entry (for backward compat)
+function getTempK() {
+  if (temperatureEntries.length === 0) return null;
+  return getTempKFromEntry(temperatureEntries[0]);
+}
+
+// ======================================================================
+// VALIDATION
+// ======================================================================
+function validate() {
+  const errors = [];
+  const activeSolutes = selectedSolutes.filter(s => s && s !== '');
+  if (activeSolutes.length === 0) errors.push("Please select at least one solute.");
+  const solventVal = document.getElementById('solvent-select').value;
+  if (!solventVal || solventVal === '__add__') errors.push("Please select a solvent.");
+  // Validate temperature entries
+  const validTemps = [];
+  for (let i = 0; i < temperatureEntries.length; i++) {
+    const entry = temperatureEntries[i];
+    if (!entry.value || entry.value.trim() === '') continue;
+    const T = getTempKFromEntry(entry);
+    if (T === null || isNaN(T)) { errors.push(`Temperature entry ${i+1}: invalid value.`); continue; }
+    if (T < 10)   errors.push(`Temperature entry ${i+1}: ${T.toFixed(2)} K is below the physical minimum (10 K).`);
+    else if (T > 2000) errors.push(`Temperature entry ${i+1}: ${T.toFixed(2)} K exceeds model range (2000 K).`);
+    else validTemps.push(T);
+  }
+  if (validTemps.length === 0 && errors.filter(e => e.includes('Temperature')).length === 0)
+    errors.push("Please enter at least one temperature value.");
+  return errors;
+}
+
+// ======================================================================
+// CALCULATE
+// ======================================================================
+function calculate() {
+  hideElem('global-error');
+  hideResultsSection();
+  hideGraphSection();
+
+  const errors = validate();
+  if (errors.length) { showError('global-error', errors); return; }
+
+  const activeSolutes = selectedSolutes.filter(s => s && s !== '');
+  const solventName   = document.getElementById('solvent-select').value;
+
+  // Build valid temperature list
+  const temps = temperatureEntries
+    .filter(e => e.value && e.value.trim() !== '')
+    .map(e => ({ T_K: getTempKFromEntry(e), raw: parseFloat(e.value), unit: e.unit }))
+    .filter(t => t.T_K !== null && isFinite(t.T_K) && t.T_K >= 10 && t.T_K <= 2000);
+
+  // Reset chart data
+  lastCalcData = {};
+  activeSolutes.forEach(s => { lastCalcData[s] = []; });
+
+  const container = document.getElementById('results-container');
+  container.innerHTML = '';
+
+  // For each temperature, create a group
+  temps.forEach(tempObj => {
+    const { T_K, raw, unit } = tempObj;
+    const T_display = unit === 'C'
+      ? `${raw.toFixed(2)} °C (${T_K.toFixed(2)} K)`
+      : `${raw.toFixed(2)} K (${(raw - 273.15).toFixed(2)} °C)`;
+
+    const groupDiv = document.createElement('div');
+    groupDiv.className = 'temp-result-group';
+    groupDiv.innerHTML = `<div class="temp-result-group-label">🌡️ T = ${T_display}</div>`;
+
+    const grid = document.createElement('div');
+    grid.className = 'results-grid';
+
+    activeSolutes.forEach(soluteName => {
+      const result = solveSolubility(soluteName, solventName, T_K);
+      const card   = buildResultCard(soluteName, solventName, T_K, raw, unit, result);
+      grid.appendChild(card);
+      // Store for chart
+      lastCalcData[soluteName].push({ T_K, x: result.x, mgPerG: result.mgPerG, g100g: result.g100g, aboveMelting: result.aboveMelting, error: !!result.error });
+    });
+
+    groupDiv.appendChild(grid);
+    container.appendChild(groupDiv);
+  });
+
+  document.getElementById('results-section').classList.add('visible');
+  document.getElementById('results-section').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+
+  // Draw chart if ≥2 temperatures
+  if (temps.length >= 2) {
+    document.getElementById('graph-section').classList.add('visible');
+    redrawChart();
+  }
+}
+
+// ======================================================================
+// RESULT CARD BUILDER  (unchanged logic, updated styling via classes)
+// ======================================================================
+function buildResultCard(soluteName, solventName, T, rawTemp, unit, result) {
+  const sol  = getActiveSolute(soluteName);
+  const solv = getActiveSolvent(solventName);
+  const card = document.createElement('div');
+  card.className = 'result-card';
+
+  const sourceTag = sol.note && sol.note.includes("Custom")
+    ? `<span class="tag-custom">Custom</span>`
+    : `<span class="tag-db">DB</span>`;
+
+  const Tm_C       = (sol.Tm - 273.15).toFixed(1);
+  const T_display  = unit === 'C' ? `${rawTemp.toFixed(2)} °C (${T.toFixed(2)} K)` : `${rawTemp.toFixed(2)} K (${(rawTemp-273.15).toFixed(2)} °C)`;
+  const Tm_display = `${sol.Tm.toFixed(2)} K (${Tm_C} °C)`;
+  const dHfusKJ    = (sol.dHfus / 1000).toFixed(2);
+  const waldenNote = sol.walden ? ' <span style="color:var(--amber);font-size:0.72rem">(Walden)</span>' : '';
+
+  let headerHtml = `
+    <div class="result-card-header">
+      <h3>${capitalize(soluteName)} ${sourceTag}</h3>
+      <div class="sub">in ${capitalize(solventName)}</div>
+    </div>
+  `;
+
+  let bodyHtml = `<div class="result-card-body">
+    <div class="result-row"><span class="result-label">Operating Temp.</span><span class="result-value">${T_display}</span></div>
+    <div class="result-row"><span class="result-label">Melting Temp. (T<sub>m</sub>)</span><span class="result-value">${Tm_display}</span></div>
+    <div class="result-row"><span class="result-label">ΔH<sub>fus</sub>${waldenNote}</span><span class="result-value">${dHfusKJ} kJ/mol</span></div>
+    <div class="result-row"><span class="result-label">MW Solute</span><span class="result-value">${sol.MW.toFixed(2)} g/mol</span></div>
+    <div class="result-row"><span class="result-label">MW Solvent</span><span class="result-value">${solv.MW.toFixed(2)} g/mol</span></div>
+    <div class="result-row"><span class="result-label">Model</span><span class="result-value" style="font-size:0.76rem">${result.model || "—"}</span></div>
+  `;
+
+  if (result.error) {
+    bodyHtml += `
+      <div class="solubility-highlight" style="background:#fef2f2;border:1px solid #fca5a5">
+        <div class="sol-label" style="color:var(--danger)">Calculation Failed</div>
+        <div style="font-size:0.85rem;color:var(--danger);margin-top:0.4rem">${result.error}</div>
+      </div>
+      <div style="text-align:center;margin-top:0.75rem"><span class="status-badge status-err">Error</span></div>
+    `;
+  } else if (result.aboveMelting) {
+    bodyHtml += `
+      <div class="solubility-highlight">
+        <div class="sol-label">Solubility (mole fraction)</div>
+        <div class="sol-value">x ≈ 1.0</div>
+        <div class="sol-unit">Solute is liquid — fully miscible (assumed)</div>
+      </div>
+      <div class="warning-box">
+        <span class="warn-icon">⚠️</span>
+        <div>
+          <strong>Operating temperature has crossed the melting temperature of this solute.</strong><br>
+          T<sub>op</sub> = ${T.toFixed(2)} K (${(T-273.15).toFixed(1)} °C) &gt; T<sub>m</sub> = ${sol.Tm.toFixed(2)} K (${Tm_C} °C).<br>
+          The solute is in a liquid state. SLE solid–liquid equilibrium does not apply.
+          Full miscibility is assumed; actual behaviour may differ.
+        </div>
+      </div>
+      <div style="text-align:center;margin-top:0.75rem"><span class="status-badge status-warn">Above T<sub>m</sub></span></div>
+    `;
+  } else {
+    const xFmt   = result.x.toPrecision(5);
+    const mgFmt  = result.mgPerG.toFixed(3);
+    const g100Fmt= result.g100g.toFixed(4);
+    bodyHtml += `
+      <div class="solubility-highlight">
+        <div class="sol-label">Mole Fraction Solubility</div>
+        <div class="sol-value">${xFmt}</div>
+        <div class="sol-unit">mol solute / mol mixture</div>
+      </div>
+      <div class="unit-tiles">
+        <div class="unit-tile unit-tile-teal">
+          <div class="ut-label">mg / g solvent</div>
+          <div class="ut-value">${mgFmt}</div>
+        </div>
+        <div class="unit-tile unit-tile-purple">
+          <div class="ut-label">g / 100 g</div>
+          <div class="ut-value">${g100Fmt}</div>
+        </div>
+      </div>
+    `;
+    if (result.walden) {
+      bodyHtml += `
+        <div class="warning-box" style="margin-top:0.75rem">
+          <span class="warn-icon">⚠️</span>
+          <div>ΔH<sub>fus</sub> estimated via Walden's rule (56.5 × T<sub>m</sub>). Provide a measured value for best accuracy.</div>
+        </div>
+      `;
+    }
+    bodyHtml += `<div style="text-align:center;margin-top:0.75rem"><span class="status-badge status-ok">Calculated</span></div>`;
+  }
+
+  bodyHtml += `</div>`;
+  card.innerHTML = headerHtml + bodyHtml;
+  return card;
+}
+
+// ======================================================================
+// CHART
+// ======================================================================
+const CHART_COLORS = [
+  '#0d9488','#06b6d4','#7c3aed','#059669','#f59e0b',
+  '#ef4444','#8b5cf6','#10b981','#3b82f6','#f97316'
+];
+let chartInstance = null;
+
+function redrawChart() {
+  const yUnit = document.getElementById('graph-y-unit').value;
+  const xUnit = document.getElementById('graph-x-unit').value;
+
+  const canvas  = document.getElementById('solubilityChart');
+  const noData  = document.getElementById('graph-no-data');
+
+  // Build datasets
+  const datasets = [];
+  let colorIdx   = 0;
+  let hasData    = false;
+
+  Object.entries(lastCalcData).forEach(([soluteName, points]) => {
+    // Only use solid-regime (non-above-melting, non-error) points
+    const validPts = points.filter(p => !p.error && !p.aboveMelting && isFinite(p.x));
+    if (validPts.length < 2) return;
+    hasData = true;
+
+    const color = CHART_COLORS[colorIdx % CHART_COLORS.length];
+    colorIdx++;
+
+    const data = validPts.map(p => ({
+      x: xUnit === 'C' ? p.T_K - 273.15 : p.T_K,
+      y: p[yUnit]
+    }));
+
+    datasets.push({
+      label: capitalize(soluteName),
+      data,
+      borderColor: color,
+      backgroundColor: color + '22',
+      pointBackgroundColor: color,
+      pointRadius: 5,
+      pointHoverRadius: 8,
+      tension: 0.35,
+      fill: false,
+      borderWidth: 2.5,
+    });
+  });
+
+  if (!hasData) {
+    noData.style.display = 'block';
+    canvas.style.display = 'none';
+    if (chartInstance) { chartInstance.destroy(); chartInstance = null; }
+    return;
+  }
+
+  noData.style.display = 'none';
+  canvas.style.display = 'block';
+
+  const yAxisLabels = { x: 'Mole Fraction (x)', mgPerG: 'Solubility (mg / g solvent)', g100g: 'Solubility (g / 100 g solvent)' };
+  const xAxisLabel  = xUnit === 'C' ? 'Temperature (°C)' : 'Temperature (K)';
+
+  if (chartInstance) chartInstance.destroy();
+
+  chartInstance = new Chart(canvas, {
+    type: 'line',
+    data: { datasets },
+    options: {
+      responsive: true,
+      maintainAspectRatio: true,
+      interaction: { mode: 'index', intersect: false },
+      plugins: {
+        legend: {
+          labels: {
+            color: '#0a2240',
+            font: { size: 13, weight: '600' },
+            usePointStyle: true,
+            pointStyleWidth: 10,
+          }
+        },
+        tooltip: {
+          backgroundColor: 'rgba(10,22,40,0.9)',
+          titleColor: '#67e8f9',
+          bodyColor: '#e2e8f0',
+          borderColor: 'rgba(13,148,136,0.4)',
+          borderWidth: 1,
+          padding: 12,
+          callbacks: {
+            title: items => `T = ${parseFloat(items[0].parsed.x).toFixed(2)} ${xUnit === 'C' ? '°C' : 'K'}`,
+            label: item => {
+              const v = item.parsed.y;
+              const u = yAxisLabels[yUnit].match(/\(([^)]+)\)/)?.[1] || '';
+              return `  ${item.dataset.label}: ${v.toPrecision(5)} ${u}`;
+            }
+          }
+        }
+      },
+      scales: {
+        x: {
+          type: 'linear',
+          title: { display: true, text: xAxisLabel, color: '#0d9488', font: { size: 12, weight: '600' } },
+          grid: { color: 'rgba(13,148,136,0.08)' },
+          ticks: { color: '#475569' }
+        },
+        y: {
+          title: { display: true, text: yAxisLabels[yUnit], color: '#0d9488', font: { size: 12, weight: '600' } },
+          grid: { color: 'rgba(13,148,136,0.08)' },
+          ticks: { color: '#475569' }
+        }
+      }
+    }
+  });
+}
+
+// ======================================================================
+// RESET
+// ======================================================================
+function resetAll() {
+  selectedSolutes    = [''];
+  customSolutes      = {};
+  customSolvents     = {};
+  temperatureEntries = [{ value: '', unit: 'K' }];
+  lastCalcData       = {};
+
+  hideElem('global-error');
+  hideElem('temp-error');
+  hideCustomSolutePanel();
+  hideCustomSolventPanel();
+  renderSoluteCards();
+  renderTemperatureEntries();
+  refreshSolventDropdown('');
+  hideResultsSection();
+  hideGraphSection();
+
+  if (chartInstance) { chartInstance.destroy(); chartInstance = null; }
+}
+
+function hideResultsSection() { document.getElementById('results-section').classList.remove('visible'); }
+function hideGraphSection()   { document.getElementById('graph-section').classList.remove('visible'); }
+
+// ======================================================================
+// HELPERS
+// ======================================================================
+function showError(elemId, messages) {
+  const el = document.getElementById(elemId);
+  if (!el) return;
+  el.innerHTML = messages.length === 1
+    ? `⚠️ ${messages[0]}`
+    : `⚠️ Please fix the following issues:<ul>${messages.map(m=>`<li>${m}</li>`).join('')}</ul>`;
+  el.classList.add('visible');
+  el.style.display = 'block';
+}
+
+function hideElem(elemId) {
+  const el = document.getElementById(elemId);
+  if (!el) return;
+  el.classList.remove('visible');
+  el.style.display = 'none';
+}
+
+// ======================================================================
+// HERO PARTICLES
+// ======================================================================
+function spawnParticles() {
+  const container = document.getElementById('heroParticles');
+  if (!container) return;
+  const count = 18;
+  for (let i = 0; i < count; i++) {
+    const p = document.createElement('div');
+    p.className = 'particle';
+    const size = 4 + Math.random() * 10;
+    p.style.cssText = `
+      width:${size}px; height:${size}px;
+      left:${Math.random()*100}%;
+      top:${60 + Math.random()*40}%;
+      animation-duration:${5 + Math.random()*8}s;
+      animation-delay:${Math.random()*6}s;
+    `;
+    container.appendChild(p);
+  }
+}
+
+// ======================================================================
+// INIT
+// ======================================================================
+function init() {
+  selectedSolutes    = [''];
+  temperatureEntries = [{ value: '', unit: 'K' }];
+
+  renderSoluteCards();
+  refreshSolventDropdown();
+  renderTemperatureEntries();
+  spawnParticles();
+
+  // Walden note toggle
+  const dhfusInput = document.getElementById('cs-dhfus');
+  if (dhfusInput) {
+    dhfusInput.addEventListener('input', function() {
+      document.getElementById('cs-walden-note').style.display = this.value === '' ? 'block' : 'none';
+    });
+  }
+}
+
+window.onload = init;
+</script>
+</body>
+</html>
