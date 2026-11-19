@@ -1,68 +1,164 @@
-# Interactive Solubility Calculator Website
-
-A standalone, research-grade web application for predicting the solid–liquid equilibrium (SLE) solubility of organic solutes in diverse pure solvents and oils across multiple temperatures.
+# Flavor Extraction & Solubility in Cooking Oils
+## Code Package — README
 
 ---
 
-## 📁 Project Directory Location
+## 🌐 Live Web Application
+**GitHub Pages URL:** https://abhishek3564io-hash.github.io/Solubility-calculator/
 
-All files for this project are located on your computer at:
-```bash
-/Users/abhishekkumar/.gemini/antigravity/scratch/solubility-calculator
+**GitHub Repository:** https://github.com/abhishek3564io-hash/Solubility-calculator
+
+---
+
+## 📁 File Descriptions
+
+| File | Description |
+|------|-------------|
+| `index.html` | Main interactive web application (HTML + CSS + JavaScript, single-file) |
+| `solubility_analysis.ipynb` | Jupyter Notebook — thermodynamic parameter estimation and UNIFAC group analysis |
+| `README.md` | This file |
+
+---
+
+## 🧪 Scientific Background
+
+This project implements **Solid–Liquid Equilibrium (SLE)** thermodynamic modelling to predict the solubility of flavor compounds (spice bioactives) in cooking oils.
+
+### Core Thermodynamic Model
+
+The SLE equation used is:
+
+```
+ln(x_i · γ_i) = -(ΔH_fus / R) × (1/T − 1/T_m)
 ```
 
----
+Where:
+- `x_i` = mole fraction solubility of solute *i*
+- `γ_i` = activity coefficient (accounts for non-ideal mixing)
+- `ΔH_fus` = enthalpy of fusion (J/mol)
+- `T_m` = melting point temperature (K)
+- `T` = system temperature (K)
+- `R` = 8.314 J/(mol·K)
 
-## 🗂️ Files Included
+### Activity Coefficient Model
 
-1. **`index.html`**
-   - Complete self-contained single-page application.
-   - Includes full HTML5 markup, modern chemical-science CSS styling, responsive layout, and thermodynamic calculation engine in vanilla JavaScript.
-   - Includes interactive Chart.js integration for Temperature vs. Solubility curves.
+A simplified Margules-type / UNIFAC-inspired model is used:
 
-2. **`README.md`**
-   - Documentation, theory explanation, and usage guide.
-
----
-
-## 🚀 How to Run the Website
-
-### Option 1: View Directly in Your Browser
-Simply double-click or open `index.html` directly in any web browser:
-```bash
-open /Users/abhishekkumar/.gemini/antigravity/scratch/solubility-calculator/index.html
+```
+ln(γ_i) = A × (ΔδP)²
 ```
 
-### Option 2: Run via Local Web Server (Recommended)
-From your terminal:
+Where `ΔδP` is the polarity difference between solute functional groups and solvent, and `A` is a fitting parameter (default = 2.0).
+
+### Calibrated Parameters (Flavor Compounds)
+
+| Compound | T_m (K) | ΔH_fus (J/mol) | Group Polarity | Source |
+|----------|---------|----------------|----------------|--------|
+| Curcumin | 456.15 | 35,000 | 1.126 | Calibrated vs. experimental data |
+| Capsaicin | 338.60 | 46,400 | 1.124 | Calibrated vs. experimental data |
+| Piperine | 403.15 | 27,130 | 0.1 | Calibrated vs. experimental data |
+
+**Calibration basis:** Experimental solubility data from Dey & Bhattacharya (2021) and Ngo et al. (2019). See `Data/` folder for validation comparison.
+
+---
+
+## 🗄️ Database Summary
+
+### Solutes (32 compounds)
+Flavor bioactives, pharmaceuticals, and reference compounds:
+- **Spice compounds:** Curcumin, Capsaicin, Piperine, Zingerone, Thymol, Eugenol, Vanillin, Anethole, Cinnamaldehyde, Carvacrol, Linalool, Menthol, Limonene, γ-Terpinene
+- **Pharmaceutical references:** Aspirin, Paracetamol, Ibuprofen, Caffeine, Cholesterol
+- **Carboxylic acids:** Palmitic acid, Stearic acid, Benzoic acid, Salicylic acid
+- **Others:** Naphthalene, Glucose, Sucrose, Urea, etc.
+
+### Solvents (25 compounds)
+- **Vegetable oils:** Soybean, Olive, Sunflower, Coconut, Palm, Groundnut
+- **Organic solvents:** Ethanol, Methanol, Water, Hexane, Acetone, Ethyl acetate, Chloroform, DMF, DMSO, Toluene, Benzene, Diethyl ether, Cyclohexane, Isopropanol, Acetonitrile, THF, DCM, Propylene glycol, Glycerol
+
+---
+
+## 🚀 How to Run
+
+### Option 1: Live Web Application (Recommended)
+Visit: **https://abhishek3564io-hash.github.io/Solubility-calculator/**
+
+No installation required. Works in any modern browser.
+
+### Option 2: Run Locally
 ```bash
-cd /Users/abhishekkumar/.gemini/antigravity/scratch/solubility-calculator
+# Clone the repository
+git clone https://github.com/abhishek3564io-hash/Solubility-calculator.git
+cd Solubility-calculator
+
+# Start a local server (Python 3)
 python3 -m http.server 8000
+
+# Open in browser
+# → http://localhost:8000
 ```
-Then navigate to:
-```
-http://localhost:8000/index.html
+
+### Option 3: Jupyter Notebook
+```bash
+# Install dependencies
+pip install jupyter numpy pandas matplotlib
+
+# Launch notebook
+jupyter notebook solubility_analysis.ipynb
 ```
 
 ---
 
-## 🔬 Scientific & Thermodynamic Overview
+## 🖥️ Web Application Features
 
-### Governing Solid–Liquid Equilibrium (SLE) Equation:
-$$x_i \cdot \gamma_i(T, \mathbf{x}) = \exp\left[-\frac{\Delta H_{\text{fus}, i}}{R}\left(\frac{1}{T} - \frac{1}{T_{m, i}}\right)\right]$$
+1. **Multi-Solute Selection** — Add up to 10 solutes simultaneously
+2. **Multi-Solvent Support** — Select one or more solvents
+3. **Temperature Range** — Set multiple temperatures (default: 298.15 K)
+4. **Custom Solute Entry** — Input T_m, ΔH_fus, MW for custom compounds
+5. **Interactive Graph** — Chart.js visualization with solubility vs. temperature curves
+6. **Results Table** — Mole fraction, mg/g, g/100g solvent outputs
+7. **Thermodynamic Properties Panel** — Shows γ, ln(γ), Δδ, and all SLE parameters
+8. **Export** — Download results as CSV
 
-- **$x_i$**: Saturation mole fraction of solute $i$ in solution.
-- **$\gamma_i$**: Activity coefficient of the solute in the liquid phase (accounting for non-ideal solute–solvent interactions).
-- **$T$**: Operating temperature ($\text{K}$).
-- **$T_{m, i}$**: Melting temperature of the solute ($\text{K}$).
-- **$\Delta H_{\text{fus}, i}$**: Enthalpy of fusion ($\text{J}/\text{mol}$).
-- **$R$**: Universal gas constant ($8.314462618\text{ J}/(\text{mol}\cdot\text{K})$).
+---
 
-### Key Features Implemented:
-- **32 Pre-loaded Compounds**: Spices, flavor molecules, and pharmaceutical compounds with literature $T_m$ and $\Delta H_{\text{fus}}$.
-- **25 Pre-loaded Solvents**: Polar, non-polar, and vegetable triglyceride oils.
-- **Custom Solute & Solvent Support**: Add custom compounds with automatic validation and custom badging.
-- **Multi-Solute Support**: Evaluate multiple solutes sequentially in the same solvent.
-- **Multi-Temperature Evaluation**: Add and remove temperature points with independent unit conversions (°C and K).
-- **Interactive Graph**: Real-time Temperature vs. Solubility curves with hover HUD tooltips and dynamic unit selectors.
-- **Melting Point Detection**: Warns clearly if $T \ge T_m$ (liquid regime).
+## 📐 Calculation Workflow
+
+```
+1. User selects solute + solvent + temperature
+2. Retrieve T_m, ΔH_fus, MW from SOLUTE_DB
+3. Retrieve MW, polar from SOLVENT_DB
+4. Calculate polarity mismatch: Δδ = GROUP_POLARITY[groups] − solvent.polar
+5. Estimate ln(γ) = A × (Δδ)² using fitted A parameter
+6. Apply bisection solver to find x_i satisfying SLE equation
+7. Convert x_i to mg/g and g/100g using molecular weights
+8. Repeat for all solute-solvent-temperature combinations
+9. Plot and display results
+```
+
+---
+
+## ⚠️ Known Limitations
+
+- Activity coefficient model is simplified (not full UNIFAC)
+- Vegetable oils approximated as average triglycerides
+- No pressure dependence (assumed 1 atm)
+- Liquid-phase non-ideality of solvent not modelled
+- For T > T_m, compound is liquid — SLE does not apply; app displays note
+
+---
+
+## 📚 Key References
+
+1. Prausnitz, J.M., Lichtenthaler, R.N., de Azevedo, E.G. (1986). *Molecular Thermodynamics of Fluid-Phase Equilibria*. Prentice Hall.
+2. Fredenslund, A., Jones, R.L., Prausnitz, J.M. (1975). Group-contribution estimation of activity coefficients in nonideal liquid mixtures. *AIChE J.*, 21(6), 1086–1099.
+3. Dey, T.K., Bhattacharya, S. (2021). Curcumin solubility in vegetable oils. *LWT Food Science and Technology*.
+4. Ngo, T.V. et al. (2019). Capsaicin and piperine solubility in edible oils. *Food Chemistry*.
+
+---
+
+## 🏫 Project Information
+
+**Course:** Chemical Engineering (Thermodynamics / Process Design)  
+**Topic:** Flavor Extraction & Solubility in Cooking Oils  
+**Web Portal:** https://abhishek3564io-hash.github.io/Solubility-calculator/  
+**Repository:** https://github.com/abhishek3564io-hash/Solubility-calculator
